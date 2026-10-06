@@ -1,4 +1,3 @@
-<img width="1253" height="778" alt="image" src="https://github.com/user-attachments/assets/4da77dd5-7f5b-40d1-ae4b-0bd75165ba23" /># Aether Core
 
 A free, balanced arcade clicker that runs in your browser. Tap the core, build generators, trigger Fever Mode and ascend for star shards.
 
