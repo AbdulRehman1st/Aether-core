@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aether Core — Arcade Clicker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C0915; --panel:#161226; --card:#1F1934; --card-hi:#2B2347;
+  --pink:#FF007A; --pink-dk:#9E004C; --cyan:#00F0FF; --cyan-dk:#008a94;
+  --gold:#FFE600; --gold-dk:#a89600; --lime:#39FF14; --lime-dk:#1b8f08; --violet:#a855f7; --violet-dk:#5b21b6;
+  --text:#e7dff2; --muted:#ac878f; --muted2:#9a93ad;
+  --display:'Space Grotesk',system-ui,'Segoe UI',sans-serif;
+  --body:'Outfit',system-ui,'Segoe UI',sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0C0915}}
+:root[data-theme="dark"]{--bg:#0C0915}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:22px;
+  background-image:radial-gradient(900px 500px at 50% 30%,rgba(255,0,122,.10),transparent 70%),radial-gradient(700px 400px at 90% 0%,rgba(0,240,255,.07),transparent 70%);
+  background-attachment:fixed;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button{font-family:var(--display);cursor:pointer;border:0;color:inherit}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* ---------- top bar ---------- */
+.top{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-bottom:2px solid rgba(255,0,122,.35);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:.75rem;margin-right:auto}
+.logo{width:44px;height:44px;border-radius:.75rem;background:var(--panel);border:1.5px solid var(--pink);box-shadow:0 0 16px -2px rgba(255,0,122,.5);display:grid;place-items:center;font-size:22px}
+.brand h1{margin:0;font:700 24px/28px var(--display);letter-spacing:-.01em;background:linear-gradient(90deg,var(--pink),var(--gold) 55%,var(--lime));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand p{margin:0;font:600 11px/14px var(--display);color:var(--muted2);letter-spacing:.04em}
+.pills{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.pill{display:flex;align-items:center;gap:.5rem;padding:.35rem .9rem;border-radius:9999px;background:rgba(22,18,38,.85);border:1.5px solid;min-width:132px}
+.pill .ic{font-size:22px}
+.pill small{display:block;font:700 10px/12px var(--display);letter-spacing:.08em;color:var(--muted2)}
+.pill b{display:block;font:700 18px/22px var(--display)}
+.pill.gold{border-color:rgba(255,230,0,.7);box-shadow:0 0 16px -2px rgba(255,230,0,.3)}.pill.gold b{color:#fff}
+.pill.lime{border-color:rgba(57,255,20,.7);box-shadow:0 0 16px -2px rgba(57,255,20,.3)}.pill.lime b{color:var(--lime)}
+.pill.pink{border-color:rgba(255,0,122,.8);box-shadow:0 0 16px -2px rgba(255,0,122,.35)}.pill.pink b{color:var(--gold)}
+.pill.cyan{border-color:rgba(0,240,255,.7);box-shadow:0 0 16px -2px rgba(0,240,255,.3)}.pill.cyan b{color:var(--cyan)}
+.tools{display:flex;gap:.5rem;align-items:center}
+.sq{width:42px;height:42px;border-radius:.75rem;background:var(--card);border:1.5px solid rgba(255,255,255,.12);font-size:18px;box-shadow:0 3px 0 #0c0915;transition:transform .08s}
+.sq:active{transform:translateY(2px);box-shadow:0 1px 0 #0c0915}
+.sq[aria-pressed="false"]{opacity:.45}
+
+/* ---------- layout ---------- */
+.wrap{display:grid;gap:1rem;padding:1rem;grid-template-columns:1fr;max-width:1500px;margin:0 auto}
+.col{display:flex;flex-direction:column;gap:.9rem;min-width:0}
+.arena-col{order:-1}
+@media (min-width:768px){.wrap{grid-template-columns:1fr 1fr}.arena-col{grid-column:1/-1}}
+@media (min-width:1100px){
+  .wrap{grid-template-columns:minmax(290px,1fr) minmax(420px,1.7fr) minmax(290px,1fr);padding:1rem 2.5rem;height:calc(100dvh - 72px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 36px);}
+  .arena-col{grid-column:auto;order:0}
+  .col.scroll{overflow-y:auto;padding:2px 6px 8px 2px;scrollbar-width:thin;scrollbar-color:var(--card-hi) transparent}
+}
+
+.panel{background:var(--panel);border:1.5px solid rgba(255,0,122,.45);border-radius:1rem;padding:1rem;box-shadow:0 0 16px -2px rgba(255,0,122,.3)}
+.panel.cy{border-color:rgba(0,240,255,.55);box-shadow:0 0 16px -2px rgba(0,240,255,.3)}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.ph h2{margin:0;font:700 22px/26px var(--display);display:flex;align-items:center;gap:.55rem;letter-spacing:-.01em}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.badge{font:700 11px/14px var(--display);letter-spacing:.06em;padding:.3rem .7rem;border-radius:9999px;border:1.5px solid;text-align:center}
+
+/* step selector */
+.step{display:flex;align-items:center;gap:.4rem;margin-top:.8rem;background:rgba(12,9,21,.7);padding:.4rem .6rem;border-radius:.75rem}
+.step span{font:700 11px/14px var(--display);color:var(--muted2);letter-spacing:.06em;margin-right:.3rem}
+.step button{flex:1;padding:.4rem 0;border-radius:9999px;background:transparent;font:700 13px/16px var(--display);color:var(--muted2)}
+.step button[aria-pressed="true"]{background:var(--cyan);color:#00363a;box-shadow:0 0 12px rgba(0,240,255,.5)}
+
+/* generator / upgrade cards */
+.tile{position:relative;background:var(--card);border:1.5px solid var(--tc,rgba(255,255,255,.2));border-radius:1rem;padding:.8rem .9rem;box-shadow:0 0 16px -4px var(--tg,transparent);transition:opacity .15s,transform .15s}
+.tile.cantbuy{opacity:.78}
+.tile.pulse{animation:tilepulse .35s ease-out}
+@keyframes tilepulse{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
+.trow{display:flex;gap:.7rem;align-items:center}
+.ico{width:48px;height:48px;border-radius:.75rem;display:grid;place-items:center;font-size:26px;flex:none;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.4)}
+.tinfo{flex:1;min-width:0}
+.tname{font:700 17px/22px var(--display);display:flex;justify-content:space-between;gap:.5rem}
+.tname em{font-style:normal;font-size:14px}
+.tsub{font:600 12px/16px var(--display);display:flex;justify-content:space-between;color:var(--muted2)}
+.bar{height:8px;border-radius:9999px;background:var(--panel);overflow:hidden;margin:.65rem 0 .6rem;position:relative}
+.bar>i{display:block;height:100%;border-radius:9999px;background:var(--bc,var(--cyan));transition:width .25s}
+.bar.big{height:14px}
+.bar.big>i{background:linear-gradient(90deg,var(--cyan),var(--lime));position:relative}
+.bar.big>i::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,255,255,.28),transparent)}
+.buyrow{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.cost{font:700 13px/16px var(--display);display:flex;align-items:center;gap:.3rem;color:#d3fbff}
+.desc{font:400 14px/20px var(--body);color:#cfc6e0;margin:.55rem 0 .65rem}
+.desc b{color:var(--cyan);font-weight:600}
+
+/* arcade push-button */
+.push{--c:var(--lime);--d:var(--lime-dk);--t:#06330a;position:relative;padding:.55rem 1.1rem;border-radius:9999px;background:var(--c);color:var(--t);font:700 14px/18px var(--display);letter-spacing:.04em;text-transform:uppercase;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 var(--d);transition:transform .06s,box-shadow .06s,filter .15s;min-width:92px}
+.push:active:not(:disabled){transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 1px 0 var(--d)}
+.push:disabled{filter:grayscale(.85) brightness(.55);cursor:not-allowed}
+.push.pink{--c:var(--pink);--d:var(--pink-dk);--t:#fff}
+.push.cyan{--c:var(--cyan);--d:var(--cyan-dk);--t:#00363a}
+.push.gold{--c:var(--gold);--d:var(--gold-dk);--t:#2b2500}
+.push.violet{--c:var(--violet);--d:var(--violet-dk);--t:#fff}
+.mini{font-size:10px;line-height:12px;padding:.2rem .5rem;border-radius:9999px;border:1.5px solid;font-family:var(--display);font-weight:700;letter-spacing:.06em}
+
+/* ---------- arena ---------- */
+.stage{position:relative;background:var(--panel);border:1.5px solid rgba(255,230,0,.55);border-radius:1.5rem;padding:1rem 1rem 1.1rem;text-align:center;box-shadow:0 0 24px -4px rgba(255,230,0,.25);overflow:hidden}
+.stage::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--pink),var(--gold),var(--cyan))}
+.stage h3{margin:.4rem 0 0;font:700 13px/18px var(--display);color:var(--cyan);letter-spacing:.08em}
+.big{font:700 clamp(40px,7vw,64px)/1.05 var(--display);letter-spacing:-.03em;margin:.35rem 0 .7rem;display:flex;justify-content:center;align-items:center;gap:.6rem;font-variant-numeric:tabular-nums}
+.stats{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
+.stats .pill{min-width:0;padding:.2rem .8rem;font:700 12px/18px var(--display)}
+.core-zone{position:relative;flex:1;min-height:280px;display:grid;place-items:center;margin:.3rem 0;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.rings{position:relative;width:min(300px,68vw);aspect-ratio:1}
+.ring{position:absolute;border-radius:50%;inset:0}
+.r1{inset:-28px;border:2px dashed rgba(255,230,0,.75);animation:spin 40s linear infinite}
+.r2{inset:-8px;border:1.5px solid rgba(0,240,255,.55)}
+.r3{inset:10px;border:1.5px dashed rgba(255,0,122,.75);animation:spin 28s linear infinite reverse}
+.r4{inset:22px;border:7px solid transparent;background:linear-gradient(var(--bg),var(--bg)) padding-box,conic-gradient(var(--cyan),#6a5cff,var(--pink),#6a5cff,var(--cyan)) border-box;box-shadow:0 0 40px rgba(255,0,122,.35),0 0 80px rgba(0,240,255,.2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.core{position:absolute;inset:34px;border-radius:50%;border:0;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.2),#1a1230 70%);display:grid;place-items:center;padding:0;transition:transform .07s}
+.core:active,.core.hit{transform:scale(.94)}
+.core.fever{animation:feverglow .5s ease-in-out infinite alternate}
+@keyframes feverglow{from{box-shadow:0 0 30px rgba(255,230,0,.4)}to{box-shadow:0 0 70px rgba(255,0,122,.8)}}
+.dia{width:62%;aspect-ratio:1;transform:rotate(45deg);border-radius:1.5rem;background:linear-gradient(135deg,var(--cyan) 10%,#fff 50%,var(--pink) 90%);display:grid;place-items:center;box-shadow:0 0 30px rgba(255,255,255,.35),inset 0 0 22px rgba(255,255,255,.55)}
+.dia span{transform:rotate(-45deg);font-size:54px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.orb{position:absolute;width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);background:radial-gradient(circle,#fff6a8,var(--gold) 60%,#c9a800);font-size:22px;display:grid;place-items:center;box-shadow:0 0 22px var(--gold);animation:orbfloat 1.6s ease-in-out infinite alternate,orbin .3s ease-out;z-index:5;padding:0}
+@keyframes orbfloat{from{translate:0 -6px}to{translate:0 6px}}
+@keyframes orbin{from{scale:0}to{scale:1}}
+.tapbtn{width:min(100%,380px);margin:.4rem auto 0;display:block;padding:.85rem 1rem;border-radius:9999px;background:var(--panel);border:2px solid var(--pink);color:var(--text);font:700 18px/22px var(--display);letter-spacing:.04em;box-shadow:0 0 20px -2px rgba(255,0,122,.5),0 4px 0 var(--pink-dk);position:relative}
+.tapbtn:active{transform:translateY(3px);box-shadow:0 0 20px -2px rgba(255,0,122,.5),0 1px 0 var(--pink-dk)}
+.fl{position:absolute;pointer-events:none;font:700 24px/1 var(--display);color:#fff;text-shadow:0 2px 0 var(--pink),0 0 14px rgba(255,0,122,.8);animation:floatup .95s ease-out forwards;z-index:8;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fl.crit{color:var(--gold);font-size:34px;-webkit-text-stroke:1.5px var(--pink);text-shadow:0 0 18px rgba(255,230,0,.8)}
+@keyframes floatup{0%{transform:translate(-50%,0) scale(.5);opacity:1}15%{transform:translate(-50%,-14px) scale(1.2)}100%{transform:translate(-50%,-90px) scale(1);opacity:0}}
+
+/* fever */
+.fever{width:100%;border-radius:1.5rem;padding:1rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;text-align:left;font:700 20px/26px var(--display);letter-spacing:.02em;color:#1a0b2e;background:linear-gradient(90deg,#ff007a,#ffb000 40%,#b9ff2a 70%,#00f0ff);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 5px 0 #6d003a;transition:filter .2s}
+.fever:disabled{filter:grayscale(.9) brightness(.45);cursor:not-allowed}
+.fever:active:not(:disabled){transform:translateY(4px);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 1px 0 #6d003a}
+.fever .tag{font:700 13px/16px var(--display);padding:.5rem .8rem;border-radius:.75rem;background:rgba(12,40,36,.9);color:var(--gold);border:1.5px solid var(--gold);text-align:center;flex:none}
+.heat{display:flex;align-items:center;gap:.8rem;background:var(--panel);border:1.5px solid rgba(255,255,255,.1);border-radius:1rem;padding:.7rem 1rem}
+.heat div.lab{font:700 11px/14px var(--display);color:var(--muted2);letter-spacing:.06em;white-space:nowrap}
+.heat .bar{flex:1;margin:0}
+.heat .bar>i{background:linear-gradient(90deg,var(--cyan),var(--lime),var(--gold),var(--pink))}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(52px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--card-hi);border:1.5px solid var(--cyan);padding:.6rem 1.1rem;border-radius:9999px;font:700 13px/18px var(--display);opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:92vw;text-align:center;box-shadow:0 0 20px -2px rgba(0,240,255,.5)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+footer{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:.6rem 1rem;border-top:1px solid rgba(255,255,255,.08);font:700 11px/16px var(--display);letter-spacing:.04em;color:var(--muted2)}
+footer .g{color:var(--gold)}footer .l{color:var(--lime)}footer .c{color:var(--cyan)}
+
+/* settings modal */
+dialog{background:var(--panel);color:var(--text);border:1.5px solid var(--cyan);border-radius:1.5rem;padding:1.4rem;max-width:min(420px,92vw);box-shadow:0 0 40px -4px rgba(0,240,255,.4)}
+dialog::backdrop{background:rgba(12,9,21,.8)}
+dialog h2{margin:0 0 .6rem;font:700 24px/32px var(--display)}
+dialog p{color:#cfc6e0;margin:.3rem 0}
+dialog .rules{margin:.8rem 0;padding:.8rem 1rem;background:var(--card);border-radius:.75rem;font-size:14px;line-height:21px}
+dialog .rules b{color:var(--gold);font-weight:600}
+.dlgbtns{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem}
+
+@media (max-width:767px){
+  .brand h1{font-size:20px}.pill{min-width:0;flex:1 1 calc(50% - .6rem)}.pills{width:100%;order:3}
+  .fever{font-size:16px;line-height:22px;padding:.8rem 1rem}
+  .big{font-size:42px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">💠</div>
+    <div>
+      <h1>AETHER CORE</h1>
+      <p>Tap, build, climb. Steady growth wins.</p>
+    </div>
+  </div>
+  <div class="pills" aria-live="off">
+    <div class="pill gold"><span class="ic">💎</span><div><small>TOTAL GEMS</small><b class="num" id="hGems">0</b></div></div>
+    <div class="pill lime"><span class="ic">⚡</span><div><small>PER SECOND</small><b class="num" id="hGps">+0/s</b></div></div>
+    <div class="pill pink"><div><small style="color:#fff">COMBO</small><b class="num" id="hCombo">x1.00</b></div></div>
+  </div>
+  <div class="tools">
+    <button class="sq" id="btnSound" aria-pressed="true" aria-label="Sound">🔊</button>
+    <button class="sq" id="btnSettings" aria-label="Settings">⚙️</button>
+    <div class="pill cyan" style="min-width:0;padding:.3rem .7rem" title="Star shards: each gives +2% production"><div><small>SHARDS</small><b class="num" id="hShards" style="font-size:16px">★0</b></div></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- LEFT: generators -->
+  <section class="col scroll" aria-label="Generators">
+    <div class="panel cy">
+      <div class="ph">
+        <h2 style="color:var(--cyan)"><span class="dot" style="background:var(--cyan);box-shadow:0 0 10px var(--cyan)"></span>Auto-Generators</h2>
+        <span class="badge" style="border-color:var(--cyan);color:var(--cyan)" id="activeBadge">0 active</span>
+      </div>
+      <div class="step" role="group" aria-label="Buy amount">
+        <span>BUY STEP</span>
+        <button data-step="1" aria-pressed="true">x1</button>
+        <button data-step="10" aria-pressed="false">x10</button>
+        <button data-step="100" aria-pressed="false">x100</button>
+        <button data-step="max" aria-pressed="false">MAX</button>
+      </div>
+    </div>
+    <div id="gens" class="col"></div>
+  </section>
+
+  <!-- CENTER: arena -->
+  <section class="col arena-col" aria-label="Arena">
+    <div class="stage">
+      <h3>✨ TOTAL GEMS HARVESTED ✨</h3>
+      <div class="big"><span style="font-size:.7em">💎</span><span id="bigGems">0</span></div>
+      <div class="stats">
+        <span class="pill lime"><span id="sGps">+0 / sec</span></span>
+        <span class="pill pink"><span id="sTap" style="color:var(--text)">+1 / tap</span></span>
+        <span class="pill gold"><span id="sCrit" style="color:var(--text)">CRIT: 5% (x3)</span></span>
+      </div>
+    </div>
+
+    <div class="core-zone" id="zone">
+      <div class="rings">
+        <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="ring r4"></div>
+        <button class="core" id="core" aria-label="Tap the core to harvest gems"><div class="dia"><span>💎</span></div></button>
+      </div>
+    </div>
+
+    <button class="tapbtn" id="tapBtn">👆 TAP TO HARVEST! (+<span id="tapLabel">1</span>)</button>
+
+    <button class="fever" id="fever" disabled>
+      <span id="feverText">FEVER MODE — CHARGING</span>
+      <span class="tag" id="feverTag">x2 BOOST<br>(15s)</span>
+    </button>
+    <div class="heat">
+      <div class="lab">🔥 FEVER HEAT<br><span id="heatTxt" class="num" style="color:var(--text);font-size:14px">0%</span></div>
+      <div class="bar"><i id="heatBar" style="width:0%"></i></div>
+    </div>
+  </section>
+
+  <!-- RIGHT: upgrades -->
+  <section class="col scroll" aria-label="Upgrades">
+    <div class="panel">
+      <div class="ph">
+        <h2 style="color:var(--pink)"><span class="dot" style="background:var(--pink);box-shadow:0 0 10px var(--pink)"></span>Super Upgrades</h2>
+        <span class="badge" style="border-color:var(--pink);color:var(--pink)" id="tierBadge">Tier 1</span>
+      </div>
+      <div style="margin-top:.8rem;background:rgba(12,9,21,.7);border-radius:.75rem;padding:.55rem .7rem">
+        <div class="ph" style="font:700 12px/16px var(--display)"><span>Progress to next star shard</span><span id="shardPct" class="num" style="color:var(--gold)">0%</span></div>
+        <div class="bar big" style="margin:.4rem 0 0"><i id="shardBar" style="width:0%"></i></div>
+      </div>
+    </div>
+    <div id="ups" class="col"></div>
+    <div class="tile" id="ascCard" style="--tc:rgba(168,85,247,.8);--tg:rgba(168,85,247,.35)">
+      <div class="trow">
+        <div class="ico" style="background:linear-gradient(135deg,#a855f7,#6366f1)">🪐</div>
+        <div class="tinfo">
+          <div class="tname"><span>Cosmic Supernova</span><span class="mini" style="color:var(--violet);border-color:var(--violet)">PRESTIGE</span></div>
+          <div class="tsub"><span>Rebirth</span></div>
+        </div>
+      </div>
+      <div class="desc" id="ascDesc"></div>
+      <div class="buyrow"><span class="cost" id="ascInfo"></span><button class="push violet" id="ascBtn">Ascend</button></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>🎮 AETHER CORE // BALANCED CLICKER ENGINE</span>
+  <span><span class="g" id="fCombo">COMBO x1.00</span> &nbsp;•&nbsp; <span class="l">TAP LIMIT: 10/s</span> &nbsp;•&nbsp; <span class="c" id="fSave">AUTO-SAVE: ON</span></span>
+</footer>
+
+<div id="toast" role="status"></div>
+
+<dialog id="dlg">
+  <h2>Settings & rules</h2>
+  <div class="rules">
+    <p><b>Taps</b> are capped at 10 per second and give a small share of your income. Generators do the heavy lifting.</p>
+    <p><b>Combo</b> builds as you keep tapping, up to x1.5.</p>
+    <p><b>Fever</b> charges slowly. When it is ready, it gives x2 for 15s.</p>
+    <p><b>Golden orbs</b> appear now and then. They are worth about 20s of income.</p>
+    <p><b>Ascend</b> trades your run for star shards. Each shard gives +2% production forever.</p>
+  </div>
+  <div class="dlgbtns">
+    <button class="push pink" id="btnReset">Reset save</button>
+    <button class="push cyan" id="btnClose">Close</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------------- config ---------------- */
+const SAVE_KEY='aether_core_v1';
+const TAP_CAP_MS=100;           // max 10 taps per second
+const COMBO_WINDOW=2000;        // ms to keep a combo alive
+const COMBO_PER_TAP=0.025, COMBO_MAX=1.5;
+const CRIT_BASE=0.05, CRIT_MULT=3;
+const FEVER_MULT=2, FEVER_TIME=15, HEAT_PER_TAP=0.5, HEAT_PASSIVE=0.35; // % per sec
+const OFFLINE_CAP_S=7200, OFFLINE_RATE=0.5;
+const ASCEND_BASE=5e6, SHARD_BONUS=0.02;
+
+const GENS=[
+  {id:'spark',  name:'Spark Siphon',   sub:'Sub-Lepton', icon:'⚡', base:15,       gps:0.2,  col:'#00F0FF', bg:'linear-gradient(135deg,#00F0FF,#0891b2)'},
+  {id:'crystal',name:'Crystal Digger', sub:'Deep Core',  icon:'⛏️', base:120,      gps:1.5,  col:'#FF007A', bg:'linear-gradient(135deg,#FF4B89,#be185d)'},
+  {id:'hyper',  name:'Hyper Blaster',  sub:'Sonic Warp', icon:'🚀', base:1100,     gps:9,    col:'#FFE600', bg:'linear-gradient(135deg,#FFE600,#f59e0b)'},
+  {id:'star',   name:'Star Reactor',   sub:'Cosmic Core',icon:'🌟', base:12000,    gps:60,   col:'#a855f7', bg:'linear-gradient(135deg,#a855f7,#6366f1)'},
+  {id:'void',   name:'Void Forge',     sub:'Dark Matter',icon:'🕳️', base:130000,   gps:420,  col:'#39FF14', bg:'linear-gradient(135deg,#39FF14,#059669)'},
+  {id:'nebula', name:'Nebula Engine',  sub:'Deep Space', icon:'🌌', base:1.4e6,    gps:3000, col:'#00F0FF', bg:'linear-gradient(135deg,#38bdf8,#7c3aed)'},
+];
+const GROWTH=1.15;
+const MILESTONES=[25,50,100,150,200];  // each doubles that generator's output
+
+const UPS=[
+  {id:'finger', name:'Finger Training', sub:'Tap Power',   icon:'🖐️', tier:1, max:10, base:40,   g:2.2, col:'#00F0FF', bg:'linear-gradient(135deg,#00F0FF,#2563eb)', btn:'cyan',
+    desc:l=>`Raises base tap power by <b>+1</b> per level. Now: <b>+${l}</b>.`},
+  {id:'sugar',  name:'Sugar Rush',      sub:'Hyper Multiplier', icon:'🍭', tier:2, max:10, base:1500, g:2.6, col:'#FF007A', bg:'linear-gradient(135deg,#FF4B89,#ec4899)', btn:'pink',
+    desc:l=>`Boosts all generator output by <b>+5%</b> per level. Now: <b>+${l*5}%</b>.`},
+  {id:'laser',  name:'Rainbow Laser',   sub:'Synergy Beam', icon:'🌈', tier:3, max:5,  base:8000, g:4,   col:'#00F0FF', bg:'linear-gradient(135deg,#00F0FF,#a855f7)', btn:'cyan',
+    desc:l=>`Each tap also harvests <b>+1%</b> of your gems/sec per level. Now: <b>+${l}%</b>.`},
+  {id:'fortune',name:'Golden Fortune',  sub:'Lucky Wheel', icon:'🎰', tier:4, max:10, base:3000, g:2.8, col:'#FFE600', bg:'linear-gradient(135deg,#FFE600,#f97316)', btn:'gold',
+    desc:l=>`Adds <b>+1%</b> critical chance per level. Crits hit x3. Now: <b>${5+l}%</b>.`},
+];
+
+/* ---------------- state ---------------- */
+function fresh(){return{gems:0,life:0,run:0,gens:GENS.map(()=>0),ups:{finger:0,sugar:0,laser:0,fortune:0},shards:0,ascensions:0,heat:0,fever:0,step:'1',sound:true,saved:Date.now(),taps:0}}
+let S=fresh();
+function load(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    const d=JSON.parse(raw);
+    const f=fresh();
+    S=Object.assign(f,d);
+    S.gens=GENS.map((_,i)=>+(d.gens&&d.gens[i])||0);
+    S.ups=Object.assign(f.ups,d.ups||{});
+    return true;
+  }catch(e){return false}
+}
+function save(){
+  S.saved=Date.now();
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}
+}
+
+/* ---------------- math ---------------- */
+const SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+function fmt(n){
+  if(!isFinite(n))return '∞';
+  if(n<1000){ if(n>=100)return String(Math.floor(n)); if(n>=10)return (Math.floor(n*10)/10).toString(); return (Math.floor(n*100)/100).toString(); }
+  let i=Math.min(Math.floor(Math.log10(n)/3),SUF.length-1);
+  const v=n/Math.pow(10,i*3);
+  return (v<10?v.toFixed(2):v<100?v.toFixed(1):v.toFixed(0))+SUF[i];
+}
+function fmtBig(n){ return n<1e12 ? Math.floor(n).toLocaleString('en-US') : fmt(n); }
+function genCost(i,owned,n){ // cost to buy n more
+  const b=GENS[i].base*Math.pow(GROWTH,owned);
+  return b*(Math.pow(GROWTH,n)-1)/(GROWTH-1);
+}
+function maxAffordable(i){
+  const owned=S.gens[i];
+  const b=GENS[i].base*Math.pow(GROWTH,owned);
+  const n=Math.floor(Math.log(S.gems*(GROWTH-1)/b+1)/Math.log(GROWTH));
+  return Math.max(0,n);
+}
+function genMult(i){
+  let m=1; for(const t of MILESTONES) if(S.gens[i]>=t) m*=2; return m;
+}
+function nextMilestone(i){ for(const t of MILESTONES) if(S.gens[i]<t) return t; return null; }
+function genGps(i){ return GENS[i].gps*genMult(i); }
+function globalMult(){ return (1+0.05*S.ups.sugar)*(1+SHARD_BONUS*S.shards)*(S.fever>0?FEVER_MULT:1); }
+function gps(){ let s=0; for(let i=0;i<GENS.length;i++) s+=S.gens[i]*genGps(i); return s*globalMult(); }
+let combo=0,lastTap=0;
+function comboMult(){ return Math.min(COMBO_MAX,1+combo*COMBO_PER_TAP); }
+function tapBase(){ return 1+S.ups.finger+gps()*0.01*S.ups.laser; }
+function tapValue(){ return tapBase()*comboMult()*(S.fever>0?FEVER_MULT:1)*(1+SHARD_BONUS*S.shards); }
+function critChance(){ return CRIT_BASE+0.01*S.ups.fortune; }
+function upCost(u){ return u.base*Math.pow(u.g,S.ups[u.id]); }
+function pendingShards(){ return Math.max(0,Math.floor(Math.sqrt(S.run/ASCEND_BASE))); }
+
+/* ---------------- audio ---------------- */
+let actx=null;
+function blip(freq,dur,type,vol){
+  if(!S.sound)return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=type||'square';o.frequency.value=freq;
+    g.gain.value=vol||0.04;g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+dur);
+    o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+dur);
+  }catch(e){}
+}
+
+/* ---------------- DOM refs ---------------- */
+const $=id=>document.getElementById(id);
+const gensEl=$('gens'),upsEl=$('ups'),zone=$('zone'),core=$('core');
+
+/* build generator cards */
+const genEls=GENS.map((g,i)=>{
+  const el=document.createElement('div');
+  el.className='tile';
+  el.style.setProperty('--tc',g.col+'99');el.style.setProperty('--tg',g.col+'44');
+  el.innerHTML=`
+    <div class="trow">
+      <div class="ico" style="background:${g.bg}">${g.icon}</div>
+      <div class="tinfo">
+        <div class="tname"><span>${g.name}</span><em class="num" style="color:${g.col}" data-r="rate"></em></div>
+        <div class="tsub"><span data-r="lvl"></span><span>per sec</span></div>
+      </div>
+    </div>
+    <div class="bar" style="--bc:${g.col}"><i data-r="bar" style="width:0%"></i></div>
+    <div class="buyrow">
+      <span class="cost num"><span>💎</span><span data-r="cost"></span></span>
+      <button class="push" data-r="btn">Buy +1</button>
+    </div>`;
+  gensEl.appendChild(el);
+  const r={};el.querySelectorAll('[data-r]').forEach(n=>r[n.dataset.r]=n);
+  r.el=el;
+  r.btn.addEventListener('click',()=>buyGen(i));
+  return r;
+});
+
+/* build upgrade cards */
+const upEls=UPS.map(u=>{
+  const el=document.createElement('div');
+  el.className='tile';
+  el.style.setProperty('--tc',u.col+'99');el.style.setProperty('--tg',u.col+'44');
+  el.innerHTML=`
+    <div class="trow">
+      <div class="ico" style="background:${u.bg}">${u.icon}</div>
+      <div class="tinfo">
+        <div class="tname"><span>${u.name}</span><span class="mini" style="color:${u.col};border-color:${u.col}">TIER ${u.tier}</span></div>
+        <div class="tsub"><span>${u.sub}</span><span class="num" data-r="lvl"></span></div>
+      </div>
+    </div>
+    <div class="desc" data-r="desc"></div>
+    <div class="buyrow">
+      <span class="cost num"><span>💎</span><span data-r="cost"></span></span>
+      <button class="push ${u.btn}" data-r="btn">Upgrade</button>
+    </div>`;
+  upsEl.appendChild(el);
+  const r={};el.querySelectorAll('[data-r]').forEach(n=>r[n.dataset.r]=n);
+  r.el=el;
+  r.btn.addEventListener('click',()=>buyUp(u));
+  return r;
+});
+
+/* ---------------- actions ---------------- */
+function stepCount(i){
+  if(S.step==='max')return Math.max(1,maxAffordable(i));
+  return parseInt(S.step,10);
+}
+function buyGen(i){
+  const n=stepCount(i);
+  const c=genCost(i,S.gens[i],n);
+  if(S.gems<c)return;
+  S.gems-=c;S.gens[i]+=n;
+  genEls[i].el.classList.remove('pulse');void genEls[i].el.offsetWidth;genEls[i].el.classList.add('pulse');
+  blip(520,.08,'square');
+  const before=S.gens[i]-n;
+  for(const t of MILESTONES){ if(before<t&&S.gens[i]>=t){toast(`${GENS[i].name} hit level ${t}: output x2!`);blip(880,.25,'triangle',.06);} }
+  render();save();
+}
+function buyUp(u){
+  if(S.ups[u.id]>=u.max)return;
+  const c=upCost(u); if(S.gems<c)return;
+  S.gems-=c;S.ups[u.id]++;
+  blip(660,.1,'square');blip(990,.14,'triangle',.05);
+  render();save();
+}
+function tap(x,y){
+  const now=performance.now();
+  if(now-lastTap<TAP_CAP_MS)return;
+  if(now-lastTap>COMBO_WINDOW)combo=0;
+  lastTap=now;combo++;
+  let v=tapValue();
+  const crit=Math.random()<critChance();
+  if(crit)v*=CRIT_MULT;
+  S.gems+=v;S.life+=v;S.run+=v;S.taps++;
+  if(S.fever<=0)S.heat=Math.min(100,S.heat+HEAT_PER_TAP);
+  floatText(x,y,'+'+fmt(v),crit);
+  core.classList.add('hit');setTimeout(()=>core.classList.remove('hit'),70);
+  blip(crit?900:300+Math.min(combo,20)*12,.06,crit?'triangle':'square',crit?.06:.03);
+}
+function floatText(x,y,t,crit){
+  const d=document.createElement('div');
+  d.className='fl'+(crit?' crit':'');
+  d.textContent=t;
+  const r=zone.getBoundingClientRect();
+  d.style.left=(x-r.left+(Math.random()*40-20))+'px';
+  d.style.top=(y-r.top-10)+'px';
+  zone.appendChild(d);setTimeout(()=>d.remove(),950);
+}
+function activateFever(){
+  if(S.heat<100||S.fever>0)return;
+  S.fever=FEVER_TIME;S.heat=100;
+  toast('FEVER! x2 production for 15 seconds');blip(440,.3,'sawtooth',.05);
+}
+let ascArmed=0;
+function ascend(){
+  const p=pendingShards();
+  if(p<1)return;
+  const now=Date.now();
+  if(now>ascArmed){ascArmed=now+3500;$('ascBtn').textContent='Confirm?';return;}
+  ascArmed=0;
+  const keepShards=Math.max(S.shards,p);
+  const f=fresh();
+  f.shards=keepShards;f.ascensions=S.ascensions+1;f.life=S.life;f.step=S.step;f.sound=S.sound;f.taps=S.taps;
+  S=f;combo=0;
+  toast(`Ascended! You now have ${S.shards} star shards (+${S.shards*2}% production)`);
+  blip(300,.5,'sawtooth',.06);blip(600,.6,'triangle',.05);
+  render();save();
+}
+
+/* ---------------- golden orb ---------------- */
+let orbEl=null,nextOrb=performance.now()+60000+Math.random()*60000;
+function spawnOrb(){
+  if(orbEl)return;
+  orbEl=document.createElement('button');
+  orbEl.className='orb';orbEl.textContent='✨';orbEl.setAttribute('aria-label','Golden orb: click for a bonus');
+  const a=Math.random()*Math.PI*2,rad=150;
+  orbEl.style.left=`calc(50% + ${Math.cos(a)*rad}px - 22px)`;
+  orbEl.style.top=`calc(50% + ${Math.sin(a)*rad}px - 22px)`;
+  orbEl.addEventListener('click',e=>{
+    const g=gps();
+    const bonus=g>0?g*20:Math.max(15,tapValue()*10);
+    S.gems+=bonus;S.life+=bonus;S.run+=bonus;
+    floatText(e.clientX,e.clientY,'+'+fmt(bonus),true);
+    blip(1000,.2,'triangle',.06);
+    orbEl.remove();orbEl=null;nextOrb=performance.now()+70000+Math.random()*80000;
+  });
+  zone.appendChild(orbEl);
+  setTimeout(()=>{if(orbEl){orbEl.remove();orbEl=null;nextOrb=performance.now()+70000+Math.random()*80000;}},10000);
+}
+
+/* ---------------- toast ---------------- */
+let toastT=null;
+function toast(t){
+  const el=$('toast');el.textContent=t;el.classList.add('on');
+  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),3200);
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  const g=gps(),tv=tapValue();
+  $('hGems').textContent=fmt(S.gems);
+  $('bigGems').textContent=fmtBig(S.gems);
+  $('hGps').textContent='+'+fmt(g)+'/s';
+  $('sGps').textContent='+'+fmt(g)+' / sec';
+  $('sTap').textContent='+'+fmt(tv)+' / tap';
+  $('sCrit').textContent='CRIT: '+Math.round(critChance()*100)+'% (x'+CRIT_MULT+')';
+  $('tapLabel').textContent=fmt(tv);
+  $('hShards').textContent='★'+S.shards;
+  const cm=comboMult();
+  $('hCombo').textContent='x'+cm.toFixed(2);
+  $('fCombo').textContent='COMBO x'+cm.toFixed(2);
+  let active=0;
+  GENS.forEach((G,i)=>{
+    const r=genEls[i],owned=S.gens[i];
+    if(owned>0)active++;
+    const n=stepCount(i),c=genCost(i,owned,n);
+    r.rate.textContent='+'+fmt(owned>0?owned*genGps(i)*globalMult():G.gps*genMult(i)*globalMult());
+    const nm=nextMilestone(i);
+    r.lvl.textContent=`LVL ${owned} • ${G.sub}`+(nm?` • x2 at ${nm}`:'');
+    let pct=0;
+    if(nm){ let prev=0; for(const t of MILESTONES){ if(t<nm)prev=t; } pct=(owned-prev)/(nm-prev)*100; } else pct=100;
+    r.bar.style.width=Math.max(0,Math.min(100,pct))+'%';
+    r.cost.textContent=fmt(c);
+    r.btn.textContent='Buy +'+n;
+    const can=S.gems>=c;
+    r.btn.disabled=!can;
+    r.el.classList.toggle('cantbuy',!can);
+  });
+  $('activeBadge').textContent=active+' active';
+  UPS.forEach((u,i)=>{
+    const r=upEls[i],l=S.ups[u.id],maxed=l>=u.max;
+    r.lvl.textContent=`LVL ${l}/${u.max}`;
+    r.desc.innerHTML=u.desc(l);
+    if(maxed){r.cost.textContent='MAX';r.btn.textContent='Maxed';r.btn.disabled=true;r.el.classList.remove('cantbuy');}
+    else{
+      const c=upCost(u);r.cost.textContent=fmt(c);r.btn.textContent='Upgrade';
+      r.btn.disabled=S.gems<c;r.el.classList.toggle('cantbuy',S.gems<c);
+    }
+  });
+  // ascension
+  const p=pendingShards();
+  const gain=Math.max(0,p-S.shards)>0?p:0; // total shards after ascension
+  const newTotal=Math.max(S.shards,p);
+  const delta=newTotal-S.shards;
+  $('ascDesc').innerHTML=`Reset gems, generators and upgrades. Keep star shards: each gives <b>+2%</b> production forever. Shards come from gems earned this run.`;
+  $('ascInfo').innerHTML=delta>0?`Gain <span style="color:var(--gold)">+${delta} ★</span>`:`Need ${fmt(ASCEND_BASE)} earned`;
+  $('ascBtn').disabled=delta<1;
+  if(Date.now()>ascArmed)$('ascBtn').textContent='Ascend';
+  const prevT=ASCEND_BASE*p*p,nextT=ASCEND_BASE*(p+1)*(p+1);
+  const pct=Math.max(0,Math.min(100,(S.run-prevT)/(nextT-prevT)*100));
+  $('shardBar').style.width=pct+'%';$('shardPct').textContent=Math.floor(pct)+'%';
+  $('tierBadge').textContent='Tier '+(S.ascensions+1);
+  // fever
+  const fb=$('fever');
+  if(S.fever>0){
+    fb.disabled=true;$('feverText').textContent='FEVER ACTIVE!';$('feverTag').innerHTML='x2 BOOST<br>('+Math.ceil(S.fever)+'s)';
+    $('heatBar').style.width=(S.fever/FEVER_TIME*100)+'%';$('heatTxt').textContent='BURNING '+Math.ceil(S.fever)+'s';
+  }else if(S.heat>=100){
+    fb.disabled=false;$('feverText').textContent='FEVER MODE — READY!';$('feverTag').innerHTML='x2 BOOST<br>(15s)';
+    $('heatBar').style.width='100%';$('heatTxt').textContent='100% [READY]';
+  }else{
+    fb.disabled=true;$('feverText').textContent='FEVER MODE — CHARGING';$('feverTag').innerHTML='x2 BOOST<br>(15s)';
+    $('heatBar').style.width=S.heat+'%';$('heatTxt').textContent=S.heat.toFixed(1)+'% [CHARGING]';
+  }
+  core.classList.toggle('fever',S.fever>0);
+}
+
+/* ---------------- loop ---------------- */
+let last=performance.now(),saveT=0;
+function frame(now){
+  const dt=Math.min(0.25,(now-last)/1000);last=now;
+  if(now-lastTap>COMBO_WINDOW&&combo>0)combo=0;
+  if(S.fever>0){S.fever-=dt;if(S.fever<=0){S.fever=0;S.heat=0;toast('Fever ended. Heat resets.');}}
+  else S.heat=Math.min(100,S.heat+HEAT_PASSIVE*dt);
+  const inc=gps()*dt;
+  S.gems+=inc;S.life+=inc;S.run+=inc;
+  if(!orbEl&&now>nextOrb)spawnOrb();
+  saveT+=dt;if(saveT>10){saveT=0;save();}
+  render();
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- events ---------------- */
+function pointTap(e){
+  const x=e.clientX||zone.getBoundingClientRect().left+zone.clientWidth/2;
+  const y=e.clientY||zone.getBoundingClientRect().top+zone.clientHeight/2;
+  tap(x,y);
+}
+core.addEventListener('pointerdown',e=>{e.preventDefault();pointTap(e)});
+core.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault();if(!e.repeat){const r=core.getBoundingClientRect();tap(r.left+r.width/2,r.top+r.height/2);}}});
+$('tapBtn').addEventListener('pointerdown',e=>{e.preventDefault();const r=core.getBoundingClientRect();tap(r.left+r.width/2+(Math.random()*60-30),r.top+r.height/2)});
+$('fever').addEventListener('click',activateFever);
+$('ascBtn').addEventListener('click',ascend);
+document.querySelectorAll('.step button').forEach(b=>b.addEventListener('click',()=>{
+  S.step=b.dataset.step;
+  document.querySelectorAll('.step button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  render();
+}));
+$('btnSound').addEventListener('click',()=>{S.sound=!S.sound;$('btnSound').setAttribute('aria-pressed',String(S.sound));$('btnSound').textContent=S.sound?'🔊':'🔇'});
+const dlg=$('dlg');
+$('btnSettings').addEventListener('click',()=>{ if(dlg.showModal)dlg.showModal(); else dlg.setAttribute('open','') });
+$('btnClose').addEventListener('click',()=>dlg.close());
+let resetArmed=0;
+$('btnReset').addEventListener('click',()=>{
+  if(Date.now()>resetArmed){resetArmed=Date.now()+3500;$('btnReset').textContent='Tap again to erase';return;}
+  S=fresh();combo=0;try{localStorage.removeItem(SAVE_KEY)}catch(e){}
+  resetArmed=0;$('btnReset').textContent='Reset save';dlg.close();toast('Save erased. Fresh start!');render();
+});
+window.addEventListener('beforeunload',save);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+
+/* ---------------- boot ---------------- */
+const had=load();
+if(had){
+  const away=Math.min(OFFLINE_CAP_S,(Date.now()-S.saved)/1000);
+  if(away>60){
+    const prevFever=S.fever;S.fever=0;
+    const gain=gps()*away*OFFLINE_RATE;
+    S.fever=0;S.gems+=gain;S.life+=gain;S.run+=gain;
+    if(gain>0)setTimeout(()=>toast(`Welcome back! Offline gain: +${fmt(gain)} gems`),600);
+  }
+  S.fever=0;
+}
+document.querySelectorAll('.step button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.step===S.step)));
+$('btnSound').setAttribute('aria-pressed',String(S.sound));$('btnSound').textContent=S.sound?'🔊':'🔇';
+render();
+requestAnimationFrame(t=>{last=t;frame(t)});
+})();
+</script>
+</body>
+</html>
